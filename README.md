@@ -1,3 +1,5 @@
+NOTE: Currently, the recording program’s interface and all supporting materials are limited to the Chinese version.
+
 作者：赵炳亮 zhaobingliang@pku.edu.cn
 日期：2025-11-21
 *基于Deepseek提供代码优化实现*
