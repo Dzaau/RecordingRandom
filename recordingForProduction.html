@@ -1,0 +1,842 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>录音实验文本呈现程序</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            color: #7f8c8d;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        /* 控制panel宽度比例 */
+        #controlPanel {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        #displayPanel {
+            flex: 3;
+            min-width: 300px;
+        }
+      
+        .panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .panel h2 {
+            color: #3498db;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .file-input-container {
+            margin-bottom: 20px;
+        }
+        
+        .file-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #3498db;
+            border-radius: 5px;
+            background-color: #f8fafc;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        
+        .file-input:hover {
+            background-color: #e8f4fd;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .start-btn {
+            background-color: #2ecc71;
+        }
+        
+        .start-btn:hover {
+            background-color: #27ae60;
+        }
+        
+        .export-btn {
+            background-color: #9b59b6;
+        }
+        
+        .export-btn:hover {
+            background-color: #8e44ad;
+        }
+        
+        .text-display {
+            text-align: center;
+            margin: 30px 0;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .fixation {
+            font-size: 60px;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        
+        .text-content {
+            font-size: 48px;
+            color: #2c3e50;
+            padding: 20px;
+            line-height: 1.5;
+        }
+        
+        .timer {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+      
+        .progress-scroll-container {
+            height: 96px; /* 2行高度 (2 * 40px + 2 * 8px间隙) */
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 5px;
+        }
+        
+        .progress-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            /* 移除之前的 justify-content: center */
+            min-height: 96px; /* 确保至少有2行的高度 */
+        }
+        
+        .progress-item {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .progress-item:hover {
+            transform: scale(1.1);
+        }
+      
+        .progress-item.current-trial {
+            box-shadow: 0px 0px 5px 1px #2ecc71;
+            z-index: 1;
+            position: relative;
+        }
+      
+        .status-gray {
+            background-color: #bdc3c7;
+            color: #2c3e50;
+        }
+        
+        .status-green {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .status-red {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .info-panel {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .info-item {
+            margin-bottom: 8px;
+            display: flex;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            min-width: 120px;
+        }
+        
+        .status-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+      
+        .font-size-control {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .font-size-control label {
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .font-size-control input {
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .progress-item {
+                width: 35px;
+                height: 35px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>录音实验文本呈现程序</h1>
+        <p class="description">导入Excel文件，随机排序录音条目，记录每个条目的开始和结束时间，最后导出包含时间数据的Excel文件。</p>
+    </header>
+    
+    <div class="container">
+        <div class="panel"  id="controlPanel"> 
+            <h2>文件导入</h2>
+            <div class="file-input-container">
+                <div class="file-input" id="fileInput">
+                    点击选择Excel文件或拖放文件到这里
+                    <br>
+                    <small>要求：包含"key"和"text"两列</small>
+                </div>
+                <input type="file" id="file" accept=".xlsx, .xls" style="display: none;">
+            </div>
+          
+            <!-- 添加字体大小控制 -->
+            <div class="font-size-control" style="margin-top: 15px; margin-bottom: 15px;">
+                <label for="fontSizeInput" style="display: block; margin-bottom: 5px; font-weight: bold;">
+                  文本呈现字体大小 (px):
+                </label> 
+                <input type="number" id="fontSizeInput" min="16" max="88" value="28" 
+                       style="width: 80px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+            </div>
+            <div class="info-panel">
+                <div class="info-item">
+                    <span class="info-label">文件状态:</span>
+                    <span id="fileStatus">未选择文件</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">条目数量:</span>
+                    <span id="itemCount">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">已完成:</span>
+                    <span id="completedCount">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">待重录:</span>
+                    <span id="reRecordCount">0</span>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button id="randomizeBtn" disabled>随机排序</button>
+                <button id="startBtn" class="start-btn" disabled>开始录音</button>
+                <button id="exportBtn" class="export-btn" disabled>导出数据</button>
+            </div>
+            
+            <div id="statusMessage" class="status-message" style="display: none;"></div>
+        </div>
+        
+        <div class="panel" id="displayPanel">
+            <h2>文本呈现</h2>
+            <div class="text-display">
+                <div id="fixation" class="fixation" style="display: none;">+</div>
+                <div id="textContent" class="text-content">请先导入文件并开始录音</div>
+            </div>
+            
+            <div class="controls">
+                <button id="nextBtn" disabled>下一个</button>
+            </div>
+            <div id="timer" class="timer">总时间: 0.00000s</div>
+            <div class="progress-container">
+                <h3>进度</h3>
+                <div class="progress-scroll-container" id="progressScrollContainer">
+                    <div class="progress-grid" id="progressGrid">
+                        <!-- 进度方块将在这里动态生成 -->
+                    </div>
+                </div>
+            </div>
+          
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let experimentData = [];
+        let currentTrialIndex = -1;
+        let finalIndex = false;
+        let experimentStartTime = 0;
+        let trialStartTime = 0;
+        let isExperimentRunning = false;
+        let fixationTimer = null;
+        let totalTime = 0;
+        let isRerecordingPhase = false; // 新增：标记是否处于重录阶段
+        
+        // DOM元素
+        const fileInput = document.getElementById('file');
+        const fileInputDisplay = document.getElementById('fileInput');
+        const fileStatus = document.getElementById('fileStatus');
+        const itemCount = document.getElementById('itemCount');
+        const completedCount = document.getElementById('completedCount');
+        const reRecordCount = document.getElementById('reRecordCount');
+        const randomizeBtn = document.getElementById('randomizeBtn');
+        const startBtn = document.getElementById('startBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const fixation = document.getElementById('fixation');
+        const textContent = document.getElementById('textContent');
+        const timer = document.getElementById('timer');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressGrid = document.getElementById('progressGrid');
+
+        // 获取字体大小输入框元素
+        const fontSizeInput = document.getElementById('fontSizeInput');
+        
+        // 监听字体大小变化
+        fontSizeInput.addEventListener('input', function() {
+            const fontSize = this.value + 'px';
+            textContent.style.fontSize = fontSize;
+        });
+        
+        // 监听字体大小输入框的键盘事件，防止输入无效值
+        fontSizeInput.addEventListener('keydown', function(e) {
+            // 允许退格、删除、Tab、左右箭头键
+            if ([8, 46, 9, 37, 39].includes(e.keyCode)) {
+                return;
+            }
+            
+            // 只允许数字输入
+            if (e.keyCode < 48 || e.keyCode > 57) {
+                if (e.keyCode < 96 || e.keyCode > 105) {
+                    e.preventDefault();
+                }
+            }
+        });
+        
+        // 监听字体大小输入框的失去焦点事件，确保值在有效范围内
+        fontSizeInput.addEventListener('blur', function() {
+            let value = parseInt(this.value);
+            
+            if (isNaN(value)) {
+                this.value = 28; // 默认值
+            } else if (value < 16) {
+                this.value = 16; // 最小值
+            } else if (value > 88) {
+                this.value = 88; // 最大值
+            }
+            
+            // 应用字体大小
+            textContent.style.fontSize = this.value + 'px';
+        });
+
+
+
+
+
+      
+        // 事件监听器
+        fileInput.addEventListener('change', handleFileUpload);
+        fileInputDisplay.addEventListener('click', () => fileInput.click());
+        fileInputDisplay.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileInputDisplay.style.backgroundColor = '#e8f4fd';
+        });
+        fileInputDisplay.addEventListener('dragleave', () => {
+            fileInputDisplay.style.backgroundColor = '#f8fafc';
+        });
+        fileInputDisplay.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileInputDisplay.style.backgroundColor = '#f8fafc';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileUpload();
+            }
+        });
+        
+        randomizeBtn.addEventListener('click', randomizeItems);
+        startBtn.addEventListener('click', startExperiment);
+        exportBtn.addEventListener('click', exportData);
+        nextBtn.addEventListener('click', goToNextTrial);
+        
+        // 处理文件上传
+        function handleFileUpload() {
+            if (!fileInput.files.length) return;
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // 获取第一个工作表
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    // 验证数据格式
+                    if (jsonData.length === 0 || !jsonData[0].hasOwnProperty('key') || !jsonData[0].hasOwnProperty('text')) {
+                        showStatus('文件格式错误：必须包含"key"和"text"两列', 'error');
+                        return;
+                    }
+                    
+                    // 处理数据
+                    experimentData = jsonData.map(item => ({
+                        key: item.key,
+                        text: item.text,
+                        startTime: null,
+                        endTime: null,
+                        markedForRerecord: false
+                    }));
+                    
+                    fileStatus.textContent = '文件已加载';
+                    itemCount.textContent = experimentData.length;
+                    updateCompletedCount();
+                    randomizeBtn.disabled = false;
+                    startBtn.disabled = false;
+                    
+                    showStatus('文件导入成功', 'success');
+                    renderProgressGrid();
+                    
+                } catch (error) {
+                    console.error(error);
+                    showStatus('文件读取失败：' + error.message, 'error');
+                }
+            };
+            
+            reader.onerror = function() {
+                showStatus('文件读取失败', 'error');
+            };
+            
+            reader.readAsArrayBuffer(file);
+            fileInputDisplay.textContent = `已选择: ${file.name}`;
+        }
+
+
+        // 获取当前每行实际显示的条目数量
+        function getItemsPerRow() {
+            const progressGrid = document.getElementById('progressGrid');
+            const items = progressGrid.getElementsByClassName('progress-item');
+            
+            if (items.length === 0) return 0;
+            
+            let itemsPerRow = 1;
+            // 获取第一个元素的垂直位置作为参考[citation:3]
+            const firstItemTop = items[0].getBoundingClientRect().top;
+            
+            // 遍历后续元素，找到第一个换行的元素[citation:1]
+            for (let i = 1; i < items.length; i++) {
+                const currentItemTop = items[i].getBoundingClientRect().top;
+                // 允许1像素的误差，避免舍入误差导致的误判[citation:3]
+                if (Math.abs(currentItemTop - firstItemTop) > 1) {
+                    itemsPerRow = i;
+                    break;
+                }
+            }
+            
+            // 如果所有元素都在一行，返回元素总数
+            if (itemsPerRow === 1 && items.length > 1) {
+                itemsPerRow = items.length;
+            }
+            
+            return itemsPerRow;
+        }
+        
+        // 在窗口大小变化时重新计算
+        window.addEventListener('resize', function() {
+            const currentItemsPerRow = getItemsPerRow();
+            console.log('当前每行条目数量:', currentItemsPerRow);
+            // 这里可以添加你的其他逻辑，比如重新调整布局等
+        });
+        
+        // 在需要的时候调用
+
+        // 随机排序条目
+        function randomizeItems() {
+            // Fisher-Yates 洗牌算法
+            for (let i = experimentData.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [experimentData[i], experimentData[j]] = [experimentData[j], experimentData[i]];
+            }
+            
+            // 重置时间记录
+            experimentData.forEach(item => {
+                item.startTime = null;
+                item.endTime = null;
+            });
+            
+            updateCompletedCount();
+            renderProgressGrid();
+            showStatus('条目已随机排序', 'success');
+        }
+      
+        // 确保当前trial的方块在可视区域内
+        function ensureTrialVisible() {
+            if (currentTrialIndex < 0) return;
+            
+            const progressGrid = document.getElementById('progressGrid');
+            const scrollContainer = document.getElementById('progressScrollContainer');
+            const items = progressGrid.getElementsByClassName('progress-item');
+            
+            if (currentTrialIndex < items.length) {
+                const currentItem = items[currentTrialIndex];
+                const itemTop = currentItem.offsetTop;
+                const containerHeight = scrollContainer.clientHeight;
+                
+                // 计算当前条目应该在哪一行显示
+                const currentItemsPerRow = getItemsPerRow();
+                const targetRow = Math.floor(currentTrialIndex / currentItemsPerRow);
+                const targetScrollTop = targetRow * 48; // 48px是每行高度
+                
+                scrollContainer.scrollTop = targetScrollTop;
+            }
+        }
+      
+        // 开始实验
+        function startExperiment() {
+            if (experimentData.length === 0) {
+                showStatus('请先导入文件', 'error');
+                return;
+            }
+            
+            isExperimentRunning = true;
+            isRerecordingPhase = false; // 初始阶段不是重录阶段
+            experimentStartTime = performance.now();
+            currentTrialIndex = -1;
+            
+            // 更新UI状态
+            startBtn.disabled = true;
+            randomizeBtn.disabled = true;
+            fileInput.disabled = true;
+            fileInputDisplay.style.pointerEvents = 'none';
+            exportBtn.disabled = false;
+            
+            // 开始计时器
+            updateTimer();
+            
+            // 开始第一个trial
+            goToNextTrial();
+            
+            showStatus('实验已开始', 'success');
+        }
+        
+        // 更新计时器显示
+        function updateTimer() {
+            if (!isExperimentRunning) return;
+            
+            totalTime = (performance.now() - experimentStartTime) / 1000;
+            timer.textContent = `总时间: ${totalTime.toFixed(5)}s`;
+            
+            requestAnimationFrame(updateTimer);
+        }
+        
+        // 进入下一个trial
+        function goToNextTrial() {
+          
+            if (currentTrialIndex >= 0) {
+                // 记录当前trial的结束时间
+                experimentData[currentTrialIndex].endTime = (performance.now() - experimentStartTime) / 1000;
+                ensureTrialVisible();
+              
+                // 如果是重录阶段，完成重录后取消红色标记
+                if (isRerecordingPhase && experimentData[currentTrialIndex].markedForRerecord) {
+                    experimentData[currentTrialIndex].markedForRerecord = false;
+                    updateReRecordCount();
+                }
+                
+                updateCompletedCount();
+                renderProgressGrid();
+            }
+            
+            currentTrialIndex++;
+            if (currentTrialIndex >= experimentData.length) {
+                finalIndex = true
+            }
+            // 检查是否所有条目都已完成
+            if (finalIndex) {
+                
+                // 检查是否有需要重录的条目
+                const needRerecord = experimentData.filter(item => item.markedForRerecord).length;
+              
+                if (needRerecord > 0 && !isRerecordingPhase) {
+                    // 进入重录阶段
+                    isRerecordingPhase = true;
+                    showStatus(`所有条目已完成，但有 ${needRerecord} 个需要重录`, 'warning');
+                    
+                    // 找到第一个标记为需要重录的条目
+                    currentTrialIndex = experimentData.findIndex(item => item.markedForRerecord);
+                } else if (needRerecord > 0 && isRerecordingPhase) {
+                    // 在重录阶段，找到下一个需要重录的条目
+                    currentTrialIndex = experimentData.findIndex((item, index) => 
+                        index > currentTrialIndex && item.markedForRerecord);
+                    
+                    // 如果没找到，从头开始找
+                    if (currentTrialIndex === -1) {
+                        currentTrialIndex = experimentData.findIndex(item => item.markedForRerecord);
+                    }
+                    
+                    // 如果还是没找到，说明重录已完成
+                    if (currentTrialIndex === -1) {
+                        endExperiment();
+                        return;
+                    }
+                } else {
+                    // 实验完成
+                    endExperiment();
+                    return;
+                }
+            }
+            
+            // 更新按钮状态
+            nextBtn.disabled = false;
+            
+            // 显示注视点
+            fixation.style.display = 'block';
+            textContent.style.display = 'none';
+            
+            // 500ms后显示文本
+            clearTimeout(fixationTimer);
+            fixationTimer = setTimeout(() => {
+                fixation.style.display = 'none';
+                textContent.style.display = 'block';
+                textContent.textContent = experimentData[currentTrialIndex].text;
+                renderProgressGrid();
+                // 记录trial开始时间
+                experimentData[currentTrialIndex].startTime = (performance.now() - experimentStartTime) / 1000;
+            }, 500);
+        }
+        
+        
+        // 结束实验
+        function endExperiment() {
+            isExperimentRunning = false;
+            textContent.textContent = '实验完成！';
+            nextBtn.disabled = true;
+            showStatus('实验已完成，可以导出数据', 'success');
+        }
+        
+        // 导出数据
+        function exportData() {
+            if (experimentData.length === 0) {
+                showStatus('没有数据可导出', 'error');
+                return;
+            }
+            
+            try {
+                // 准备导出数据
+                const exportData = experimentData.map(item => ({
+                    key: item.key,
+                    text: item.text,
+                    startTime: item.startTime ? item.startTime.toFixed(5) : '',
+                    endTime: item.endTime ? item.endTime.toFixed(5) : '',
+                    experimentStartTime: new Date().toISOString()
+                }));
+                
+                // 创建工作表
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, '录音数据');
+                
+                // 导出文件
+                XLSX.writeFile(workbook, '录音实验数据.xlsx');
+                showStatus('数据导出成功', 'success');
+            } catch (error) {
+                console.error(error);
+                showStatus('数据导出失败：' + error.message, 'error');
+            }
+        }
+        
+        // 渲染进度网格
+        function renderProgressGrid() {
+            progressGrid.innerHTML = '';
+            
+            experimentData.forEach((item, index) => {
+                const progressItem = document.createElement('div');
+                progressItem.className = 'progress-item';
+                progressItem.textContent = item.key;
+                
+                // 设置状态颜色
+                if (item.markedForRerecord) {
+                    progressItem.classList.add('status-red');
+                } else if (item.startTime !== null && item.endTime !== null) {
+                    progressItem.classList.add('status-green');
+                } else {
+                    progressItem.classList.add('status-gray');
+                }
+              
+                // 如果是当前trial，添加视觉提示
+                if (index === currentTrialIndex && isExperimentRunning) {
+                    progressItem.classList.add('current-trial');
+                }
+              
+                // 添加点击事件
+                progressItem.addEventListener('click', () => {
+                  if (isExperimentRunning && index !== currentTrialIndex) {
+                      item.markedForRerecord = !item.markedForRerecord;
+                      renderProgressGrid();
+                      updateReRecordCount();
+                      
+                      // 滚动到点击的条目
+                      setTimeout(() => {
+                          const currentItemsPerRow = getItemsPerRow();
+                          const targetRow = Math.floor(index / currentItemsPerRow);
+                          const scrollContainer = document.getElementById('progressScrollContainer');
+                          scrollContainer.scrollTop = targetRow * 48;
+                      }, 0);
+                  }
+                });
+                
+                progressGrid.appendChild(progressItem);
+            });
+            // 渲染完成后确保当前trial可见
+            if (isExperimentRunning) {
+                // 使用setTimeout确保DOM更新后再滚动
+                setTimeout(ensureTrialVisible, 0);
+            }
+        }
+        
+        // 更新完成计数
+        function updateCompletedCount() {
+            const completed = experimentData.filter(item => item.startTime !== null && item.endTime !== null).length;
+            completedCount.textContent = completed;
+        }
+        
+        // 更新重录计数
+        function updateReRecordCount() {
+            const reRecord = experimentData.filter(item => item.markedForRerecord).length;
+            reRecordCount.textContent = reRecord;
+        }
+        
+        // 显示状态消息
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message';
+            
+            switch(type) {
+                case 'success':
+                    statusMessage.classList.add('status-success');
+                    break;
+                case 'warning':
+                    statusMessage.classList.add('status-warning');
+                    break;
+                case 'error':
+                    statusMessage.classList.add('status-error');
+                    break;
+            }
+            
+            statusMessage.style.display = 'block';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
