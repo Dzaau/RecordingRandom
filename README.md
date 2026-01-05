@@ -2,7 +2,7 @@ NOTE: Currently, the recording program’s interface and all supporting material
 
 作者：赵炳亮 zhaobingliang@pku.edu.cn
 日期：2025-11-21
-*基于Deepseek提供代码优化实现*
+*基于Deepseek、Gemini提供代码优化实现*
 
 
 # 更新 2026-01-05
