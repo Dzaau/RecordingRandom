@@ -4,6 +4,11 @@ NOTE: Currently, the recording program’s interface and all supporting material
 日期：2025-11-21
 *基于Deepseek提供代码优化实现*
 
+
+# 更新 2026-01-05
+增加了在刺激呈现中显示图片的功能（可选只显示文本、只显示图片或二者均显示），请使用recordingForProductionWithImage.html。
+注意在stimuli.xlsx中增加一列名为“picture”的变量，用于储存每个刺激对应的图片的本地地址
+
 # 前言
 
 本程序用于语音产出实验时，控制刺激文本的呈现，可实现随机化、自动保存起止时间（以便后续切分音频）。本程序自身并不具备录音功能，建议配合录音软件（如Audition）一起使用。
