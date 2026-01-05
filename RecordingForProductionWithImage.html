@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多模态录音实验程序</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            color: #7f8c8d;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        /* 控制panel宽度比例 */
+        #controlPanel {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        #displayPanel {
+            flex: 3;
+            min-width: 300px;
+        }
+      
+        .panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .panel h2 {
+            color: #3498db;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .file-input-container {
+            margin-bottom: 20px;
+        }
+        
+        .file-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #3498db;
+            border-radius: 5px;
+            background-color: #f8fafc;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        
+        .file-input:hover {
+            background-color: #e8f4fd;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .start-btn {
+            background-color: #2ecc71;
+        }
+        
+        .start-btn:hover {
+            background-color: #27ae60;
+        }
+        
+        .export-btn {
+            background-color: #9b59b6;
+        }
+        
+        .export-btn:hover {
+            background-color: #8e44ad;
+        }
+        
+        .text-display {
+            text-align: center;
+            margin: 30px 0;
+            min-height: 400px; /* 增加最小高度以适应图片 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .fixation {
+            font-size: 60px;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        
+        .text-content {
+            font-size: 48px;
+            color: #2c3e50;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        /* 新增：图片样式 */
+        .image-content {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            margin-bottom: 20px;
+            display: none; /* 默认隐藏 */
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .timer {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+      
+        .progress-scroll-container {
+            height: 96px; /* 2行高度 (2 * 40px + 2 * 8px间隙) */
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 5px;
+        }
+        
+        .progress-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 96px; 
+        }
+        
+        .progress-item {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .progress-item:hover {
+            transform: scale(1.1);
+        }
+      
+        .progress-item.current-trial {
+            box-shadow: 0px 0px 5px 1px #2ecc71;
+            z-index: 1;
+            position: relative;
+        }
+      
+        .status-gray {
+            background-color: #bdc3c7;
+            color: #2c3e50;
+        }
+        
+        .status-green {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .status-red {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .info-panel {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .info-item {
+            margin-bottom: 8px;
+            display: flex;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            min-width: 120px;
+        }
+        
+        .status-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+      
+        .setting-control {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+            margin-top: 10px;
+        }
+        
+        .setting-control label {
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold;
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .setting-control input[type="number"] {
+            text-align: center;
+            width: 80px; 
+            padding: 5px; 
+            border: 1px solid #ddd; 
+            border-radius: 3px;
+        }
+
+        /* 新增：单选框样式 */
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .radio-group div {
+            display: flex;
+            align-items: center;
+        }
+        
+        .radio-group input {
+            margin-right: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .progress-item {
+                width: 35px;
+                height: 35px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>多模态录音实验程序</h1>
+        <p class="description">导入包含"key"、"text"和"picture"列的Excel文件，选择呈现模式，记录每个条目的时间。</p>
+    </header>
+    
+    <div class="container">
+        <div class="panel"  id="controlPanel"> 
+            <h2>实验设置</h2>
+            <div class="file-input-container">
+                <div class="file-input" id="fileInput">
+                    点击选择Excel文件或拖放文件
+                    <br>
+                    <small>列名：key, text, picture(可选)</small>
+                </div>
+                <input type="file" id="file" accept=".xlsx, .xls" style="display: none;">
+            </div>
+          
+            <!-- 字体大小控制 -->
+            <div class="setting-control">
+                <label for="fontSizeInput">文本字体大小 (px):</label> 
+                <input type="number" id="fontSizeInput" min="16" max="88" value="28">
+            </div>
+
+            <!-- 新增：显示模式控制 -->
+            <div class="setting-control">
+                <label>呈现模式:</label>
+                <div class="radio-group">
+                    <div>
+                        <input type="radio" id="modeText" name="displayMode" value="text" checked>
+                        <label for="modeText" style="margin:0; font-weight:normal;">仅文本</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="modeImage" name="displayMode" value="image">
+                        <label for="modeImage" style="margin:0; font-weight:normal;">仅图片</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="modeBoth" name="displayMode" value="both">
+                        <label for="modeBoth" style="margin:0; font-weight:normal;">文本 + 图片</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <div class="info-item">
+                    <span class="info-label">文件状态:</span>
+                    <span id="fileStatus">未选择文件</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">条目数量:</span>
+                    <span id="itemCount">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">已完成:</span>
+                    <span id="completedCount">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">待重录:</span>
+                    <span id="reRecordCount">0</span>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button id="randomizeBtn" disabled>随机排序</button>
+                <button id="startBtn" class="start-btn" disabled>开始录音</button>
+                <button id="exportBtn" class="export-btn" disabled>导出数据</button>
+            </div>
+            
+            <div id="statusMessage" class="status-message" style="display: none;"></div>
+        </div>
+        
+        <div class="panel" id="displayPanel">
+            <h2>刺激呈现</h2>
+            <div class="text-display">
+                <div id="fixation" class="fixation" style="display: none;">+</div>
+                
+                <!-- 新增：图片容器 -->
+                <img id="imageContent" class="image-content" alt="实验图片" src="">
+                
+                <div id="textContent" class="text-content">请先导入文件并开始录音</div>
+            </div>
+            
+            <div class="controls">
+                <button id="nextBtn" disabled>下一个</button>
+            </div>
+            <div id="timer" class="timer">总时间: 0.00000s</div>
+            <div class="progress-container">
+                <h3>进度</h3>
+                <div class="progress-scroll-container" id="progressScrollContainer">
+                    <div class="progress-grid" id="progressGrid">
+                        <!-- 进度方块将在这里动态生成 -->
+                    </div>
+                </div>
+            </div>
+          
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let experimentData = [];
+        let currentTrialIndex = -1;
+        let finalIndex = false;
+        let experimentStartTime = 0;
+        let isExperimentRunning = false;
+        let fixationTimer = null;
+        let totalTime = 0;
+        let isRerecordingPhase = false; 
+        
+        // DOM元素
+        const fileInput = document.getElementById('file');
+        const fileInputDisplay = document.getElementById('fileInput');
+        const fileStatus = document.getElementById('fileStatus');
+        const itemCount = document.getElementById('itemCount');
+        const completedCount = document.getElementById('completedCount');
+        const reRecordCount = document.getElementById('reRecordCount');
+        const randomizeBtn = document.getElementById('randomizeBtn');
+        const startBtn = document.getElementById('startBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const fixation = document.getElementById('fixation');
+        const textContent = document.getElementById('textContent');
+        const imageContent = document.getElementById('imageContent'); // 新增
+        const timer = document.getElementById('timer');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressGrid = document.getElementById('progressGrid');
+
+        // 获取字体大小输入框元素
+        const fontSizeInput = document.getElementById('fontSizeInput');
+        
+        // 监听字体大小变化
+        fontSizeInput.addEventListener('input', function() {
+            const fontSize = this.value + 'px';
+            textContent.style.fontSize = fontSize;
+        });
+        
+        // 监听字体大小输入框的键盘事件
+        fontSizeInput.addEventListener('keydown', function(e) {
+            if ([8, 46, 9, 37, 39].includes(e.keyCode)) return;
+            if (e.keyCode < 48 || e.keyCode > 57) {
+                if (e.keyCode < 96 || e.keyCode > 105) {
+                    e.preventDefault();
+                }
+            }
+        });
+        
+        fontSizeInput.addEventListener('blur', function() {
+            let value = parseInt(this.value);
+            if (isNaN(value)) this.value = 28;
+            else if (value < 16) this.value = 16;
+            else if (value > 88) this.value = 88;
+            textContent.style.fontSize = this.value + 'px';
+        });
+
+        // 事件监听器
+        fileInput.addEventListener('change', handleFileUpload);
+        fileInputDisplay.addEventListener('click', () => fileInput.click());
+        fileInputDisplay.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileInputDisplay.style.backgroundColor = '#e8f4fd';
+        });
+        fileInputDisplay.addEventListener('dragleave', () => {
+            fileInputDisplay.style.backgroundColor = '#f8fafc';
+        });
+        fileInputDisplay.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileInputDisplay.style.backgroundColor = '#f8fafc';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileUpload();
+            }
+        });
+        
+        randomizeBtn.addEventListener('click', randomizeItems);
+        startBtn.addEventListener('click', startExperiment);
+        exportBtn.addEventListener('click', exportData);
+        nextBtn.addEventListener('click', goToNextTrial);
+        
+        // 处理文件上传
+        function handleFileUpload() {
+            if (!fileInput.files.length) return;
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    // 验证数据格式 (修改：必须包含key，text和picture至少有一个)
+                    if (jsonData.length === 0 || !jsonData[0].hasOwnProperty('key')) {
+                        showStatus('文件格式错误：必须包含"key"列', 'error');
+                        return;
+                    }
+                    
+                    // 处理数据 (新增picture字段读取)
+                    experimentData = jsonData.map(item => ({
+                        key: item.key,
+                        text: item.text || '', // 允许text为空，防止报错
+                        picture: item.picture || '', // 读取picture列，如果不存在则为空
+                        startTime: null,
+                        endTime: null,
+                        markedForRerecord: false
+                    }));
+                    
+                    fileStatus.textContent = '文件已加载';
+                    itemCount.textContent = experimentData.length;
+                    updateCompletedCount();
+                    randomizeBtn.disabled = false;
+                    startBtn.disabled = false;
+                    
+                    showStatus('文件导入成功', 'success');
+                    renderProgressGrid();
+                    
+                } catch (error) {
+                    console.error(error);
+                    showStatus('文件读取失败：' + error.message, 'error');
+                }
+            };
+            
+            reader.onerror = function() {
+                showStatus('文件读取失败', 'error');
+            };
+            
+            reader.readAsArrayBuffer(file);
+            fileInputDisplay.textContent = `已选择: ${file.name}`;
+        }
+
+        // 获取当前每行实际显示的条目数量
+        function getItemsPerRow() {
+            const progressGrid = document.getElementById('progressGrid');
+            const items = progressGrid.getElementsByClassName('progress-item');
+            
+            if (items.length === 0) return 0;
+            
+            let itemsPerRow = 1;
+            const firstItemTop = items[0].getBoundingClientRect().top;
+            
+            for (let i = 1; i < items.length; i++) {
+                const currentItemTop = items[i].getBoundingClientRect().top;
+                if (Math.abs(currentItemTop - firstItemTop) > 1) {
+                    itemsPerRow = i;
+                    break;
+                }
+            }
+            
+            if (itemsPerRow === 1 && items.length > 1) {
+                itemsPerRow = items.length;
+            }
+            
+            return itemsPerRow;
+        }
+        
+        window.addEventListener('resize', function() {
+            // 响应式调整
+        });
+
+        // 随机排序条目
+        function randomizeItems() {
+            for (let i = experimentData.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [experimentData[i], experimentData[j]] = [experimentData[j], experimentData[i]];
+            }
+            
+            experimentData.forEach(item => {
+                item.startTime = null;
+                item.endTime = null;
+            });
+            
+            updateCompletedCount();
+            renderProgressGrid();
+            showStatus('条目已随机排序', 'success');
+        }
+      
+        function ensureTrialVisible() {
+            if (currentTrialIndex < 0) return;
+            
+            const progressGrid = document.getElementById('progressGrid');
+            const scrollContainer = document.getElementById('progressScrollContainer');
+            const items = progressGrid.getElementsByClassName('progress-item');
+            
+            if (currentTrialIndex < items.length) {
+                const currentItemsPerRow = getItemsPerRow();
+                const targetRow = Math.floor(currentTrialIndex / currentItemsPerRow);
+                const targetScrollTop = targetRow * 48;
+                
+                scrollContainer.scrollTop = targetScrollTop;
+            }
+        }
+      
+        function startExperiment() {
+            if (experimentData.length === 0) {
+                showStatus('请先导入文件', 'error');
+                return;
+            }
+            
+            isExperimentRunning = true;
+            isRerecordingPhase = false;
+            experimentStartTime = performance.now();
+            currentTrialIndex = -1;
+            
+            startBtn.disabled = true;
+            randomizeBtn.disabled = true;
+            fileInput.disabled = true;
+            fileInputDisplay.style.pointerEvents = 'none';
+            exportBtn.disabled = false;
+            
+            // 禁用设置控件
+            document.querySelectorAll('input[name="displayMode"]').forEach(el => el.disabled = true);
+            fontSizeInput.disabled = true;
+            
+            updateTimer();
+            goToNextTrial();
+            
+            showStatus('实验已开始', 'success');
+        }
+        
+        function updateTimer() {
+            if (!isExperimentRunning) return;
+            
+            totalTime = (performance.now() - experimentStartTime) / 1000;
+            timer.textContent = `总时间: ${totalTime.toFixed(5)}s`;
+            
+            requestAnimationFrame(updateTimer);
+        }
+        
+        function goToNextTrial() {
+          
+            if (currentTrialIndex >= 0) {
+                experimentData[currentTrialIndex].endTime = (performance.now() - experimentStartTime) / 1000;
+                ensureTrialVisible();
+              
+                if (isRerecordingPhase && experimentData[currentTrialIndex].markedForRerecord) {
+                    experimentData[currentTrialIndex].markedForRerecord = false;
+                    updateReRecordCount();
+                }
+                
+                updateCompletedCount();
+                renderProgressGrid();
+            }
+            
+            currentTrialIndex++;
+            if (currentTrialIndex >= experimentData.length) {
+                finalIndex = true
+            }
+            
+            if (finalIndex) {
+                const needRerecord = experimentData.filter(item => item.markedForRerecord).length;
+              
+                if (needRerecord > 0 && !isRerecordingPhase) {
+                    isRerecordingPhase = true;
+                    showStatus(`所有条目已完成，但有 ${needRerecord} 个需要重录`, 'warning');
+                    currentTrialIndex = experimentData.findIndex(item => item.markedForRerecord);
+                } else if (needRerecord > 0 && isRerecordingPhase) {
+                    currentTrialIndex = experimentData.findIndex((item, index) => 
+                        index > currentTrialIndex && item.markedForRerecord);
+                    
+                    if (currentTrialIndex === -1) {
+                        currentTrialIndex = experimentData.findIndex(item => item.markedForRerecord);
+                    }
+                    
+                    if (currentTrialIndex === -1) {
+                        endExperiment();
+                        return;
+                    }
+                } else {
+                    endExperiment();
+                    return;
+                }
+            }
+            
+            nextBtn.disabled = false;
+            
+            // 重置显示
+            fixation.style.display = 'block';
+            textContent.style.display = 'none';
+            imageContent.style.display = 'none';
+            
+            clearTimeout(fixationTimer);
+            fixationTimer = setTimeout(() => {
+                fixation.style.display = 'none';
+                
+                // 获取当前设置的显示模式
+                const mode = document.querySelector('input[name="displayMode"]:checked').value;
+                const currentData = experimentData[currentTrialIndex];
+                
+                // 根据模式决定显示什么
+                const showText = (mode === 'text' || mode === 'both');
+                const showImage = (mode === 'image' || mode === 'both');
+                
+                // 处理文本显示
+                if (showText && currentData.text) {
+                    textContent.textContent = currentData.text;
+                    textContent.style.display = 'block';
+                } else {
+                    textContent.style.display = 'none';
+                }
+                
+                // 处理图片显示
+                if (showImage && currentData.picture) {
+                    imageContent.src = currentData.picture;
+                    imageContent.style.display = 'block';
+                } else {
+                    imageContent.style.display = 'none';
+                    imageContent.src = ''; // 清空src防止显示缓存
+                }
+                
+                renderProgressGrid();
+                experimentData[currentTrialIndex].startTime = (performance.now() - experimentStartTime) / 1000;
+            }, 500);
+        }
+        
+        function endExperiment() {
+            isExperimentRunning = false;
+            textContent.style.display = 'block';
+            imageContent.style.display = 'none';
+            textContent.textContent = '实验完成！';
+            nextBtn.disabled = true;
+            
+            // 重新启用设置控件
+            document.querySelectorAll('input[name="displayMode"]').forEach(el => el.disabled = false);
+            fontSizeInput.disabled = false;
+            
+            showStatus('实验已完成，可以导出数据', 'success');
+        }
+        
+        function exportData() {
+            if (experimentData.length === 0) {
+                showStatus('没有数据可导出', 'error');
+                return;
+            }
+            
+            try {
+                const exportData = experimentData.map(item => ({
+                    key: item.key,
+                    text: item.text,
+                    picture: item.picture, // 导出时也包含图片列
+                    startTime: item.startTime ? item.startTime.toFixed(5) : '',
+                    endTime: item.endTime ? item.endTime.toFixed(5) : '',
+                    experimentStartTime: new Date().toISOString()
+                }));
+                
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, '录音数据');
+                
+                XLSX.writeFile(workbook, '录音实验数据.xlsx');
+                showStatus('数据导出成功', 'success');
+            } catch (error) {
+                console.error(error);
+                showStatus('数据导出失败：' + error.message, 'error');
+            }
+        }
+        
+        function renderProgressGrid() {
+            progressGrid.innerHTML = '';
+            
+            experimentData.forEach((item, index) => {
+                const progressItem = document.createElement('div');
+                progressItem.className = 'progress-item';
+                progressItem.textContent = item.key;
+                
+                if (item.markedForRerecord) {
+                    progressItem.classList.add('status-red');
+                } else if (item.startTime !== null && item.endTime !== null) {
+                    progressItem.classList.add('status-green');
+                } else {
+                    progressItem.classList.add('status-gray');
+                }
+              
+                if (index === currentTrialIndex && isExperimentRunning) {
+                    progressItem.classList.add('current-trial');
+                }
+              
+                progressItem.addEventListener('click', () => {
+                  if (isExperimentRunning && index !== currentTrialIndex) {
+                      item.markedForRerecord = !item.markedForRerecord;
+                      renderProgressGrid();
+                      updateReRecordCount();
+                      
+                      setTimeout(() => {
+                          const currentItemsPerRow = getItemsPerRow();
+                          const targetRow = Math.floor(index / currentItemsPerRow);
+                          const scrollContainer = document.getElementById('progressScrollContainer');
+                          scrollContainer.scrollTop = targetRow * 48;
+                      }, 0);
+                  }
+                });
+                
+                progressGrid.appendChild(progressItem);
+            });
+            
+            if (isExperimentRunning) {
+                setTimeout(ensureTrialVisible, 0);
+            }
+        }
+        
+        function updateCompletedCount() {
+            const completed = experimentData.filter(item => item.startTime !== null && item.endTime !== null).length;
+            completedCount.textContent = completed;
+        }
+        
+        function updateReRecordCount() {
+            const reRecord = experimentData.filter(item => item.markedForRerecord).length;
+            reRecordCount.textContent = reRecord;
+        }
+        
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message';
+            
+            switch(type) {
+                case 'success':
+                    statusMessage.classList.add('status-success');
+                    break;
+                case 'warning':
+                    statusMessage.classList.add('status-warning');
+                    break;
+                case 'error':
+                    statusMessage.classList.add('status-error');
+                    break;
+            }
+            
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
