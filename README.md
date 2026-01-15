@@ -4,8 +4,12 @@ NOTE: Currently, the recording program’s interface and all supporting material
 日期：2025-11-21
 *基于Deepseek、Gemini提供代码优化实现*
 
+### 更新 2026-01-15
+增加了配套的PRAAT脚本(annotation.praat)，用于生成长音频的标注。
+注意：请现将录音时间戳数据的excel表格文件另存为“Unicode 文本(.txt)”，在脚本运行后输入txt文件地址、音频文件地址、和开始录音时音频文件标记时间（见下面使用方法）
+如果音频文件过长，程序报错，请在音频文件处直接输入音频总时长（单位是秒）,将直接按时长创建textgrid文件。
 
-# 更新 2026-01-05
+### 更新 2026-01-05
 增加了在刺激呈现中显示图片的功能（可选只显示文本、只显示图片或二者均显示），请使用recordingForProductionWithImage.html。
 注意在stimuli.xlsx中增加一列名为“picture”的变量，用于储存每个刺激对应的图片的本地地址
 
