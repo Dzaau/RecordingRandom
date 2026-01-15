@@ -6,7 +6,8 @@ NOTE: Currently, the recording program’s interface and all supporting material
 
 ### 更新 2026-01-15
 增加了配套的PRAAT脚本(annotation.praat)，用于生成长音频的标注。
-注意：请现将录音时间戳数据的excel表格文件另存为“Unicode 文本(.txt)”，在脚本运行后输入txt文件地址、音频文件地址、和开始录音时音频文件标记时间（见下面使用方法）
+注意：请先将录音时间戳数据的excel表格文件另存为“Unicode 文本(.txt)”，在脚本运行后输入txt文件地址、音频文件地址、和开始录音时音频文件标记时间（见下面使用方法）
+
 如果音频文件过长，程序报错，请在音频文件处直接输入音频总时长（单位是秒）,将直接按时长创建textgrid文件。
 
 ### 更新 2026-01-05
